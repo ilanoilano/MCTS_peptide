@@ -1,0 +1,128 @@
+在WSL中运行，激活对应环境，进入对应目录。
+以下是运行各个程序的指令：
+
+预处理文件：
+python3 run_phase1.py -t 1LYZ --pdb /path/to/1LYZ.pdb
+
+1. sim_1.py（序列补全）
+cd /mnt/d/code/AA
+
+# 基础测试 - 随机填充所有位置
+python3 sim_1.py -s ACxxxxxxCxxxxxxCG --fill-all -n 5
+
+# 指定 MCTS 深度
+python3 sim_1.py -s ACxxxxxxCxxxxxxCG -d 2 --fill-all -n 5
+
+# 验证序列
+python3 sim_1.py -s ACxxxxxxCxxxxxxCG --fill-all -n 5 --validate
+
+# 静默模式
+python3 sim_1.py -s ACxxxxxxCxxxxxxCG --fill-all -n 5 -q
+
+
+2. sim_2.py（肽构象生成）
+cd /mnt/d/code/AA
+
+# 基础测试
+python3 sim_2.py -s ACAAAAAACAAAAAACG
+
+# 静默模式
+python3 sim_2.py -s ACAAAAAACAAAAAACG -q
+
+# 指定输出目录
+python3 sim_2.py -s ACAAAAAACAAAAAACG -o /mnt/d/code/AA/temporary
+3. sim_3.py（PDB 转 PDBQT）
+
+# 转换 PDB 到 PDBQT
+python3 sim_3.py -p /mnt/d/code/AA/temporary/peptide_xxx.pdb
+
+# 指定输出路径
+python3 sim_3.py -p input.pdb -o output.pdbqt
+
+# 静默模式
+python3 sim_3.py -p input.pdb -q
+4. sim_4.py（Vina 对接）
+###想实时测试？推荐这个：
+vina --receptor results/1LYZ/vina/vina-receptor.pdbqt \
+     --ligand temporary/peptide_8b1f9368.pdbqt \
+     --config results/1LYZ/vina/vina_config.txt \
+     --exhaustiveness 1 \
+     --num_modes 1 \
+     --out /tmp/test_out.pdbqt
+
+# 基础对接
+python3 sim_4.py -l /mnt/d/code/AA/temporary/peptide_xxx.pdbqt -t 1LYZ
+
+# 指定参数
+python3 sim_4.py -l ligand.pdbqt -t 1LYZ --exhaustiveness 4 --num-modes 9
+
+# 指定受体和配置
+python3 sim_4.py -l ligand.pdbqt -r receptor.pdbqt -c vina_config.txt
+
+# 静默模式
+python3 sim_4.py -l ligand.pdbqt -t 1LYZ -q
+5. mcts_main.py（MCTS 主循环测试）
+Copy
+cd /mnt/d/code/AA
+
+# 基础测试（100 次迭代）
+python3 mcts_main.py
+
+# 修改代码中的参数：
+# - max_iterations: 迭代次数
+# - target_name: 靶点名称
+# - exploration_constant: PUCT 探索常数
+6. run_phase2.py（Phase 2 完整流程）
+Copy
+cd /mnt/d/code/AA
+
+# 基础运行（1000 次迭代）
+python3 run_phase2.py -t 1LYZ -n 1000
+
+# 更多迭代
+python3 run_phase2.py -t 1LYZ -n 30000
+
+# 调整 Vina 参数
+python3 run_phase2.py -t 1LYZ -n 1000 -e 4 --timeout 600
+
+# 调整探索常数
+python3 run_phase2.py -t 1LYZ -n 1000 -c 2.0
+
+# 提取更多候选
+python3 run_phase2.py -t 1LYZ -n 1000 --top-n 20
+
+# 静默模式
+python3 run_phase2.py -t 1LYZ -n 1000 -q
+
+# 调整保存间隔
+python3 run_phase2.py -t 1LYZ -n 5000 --save-interval 500
+7. 完整流程测试（Python 内联）
+# 测试 sim_1 ~ sim_4 串联
+python3 -c "
+import sim_1
+import sim_2
+import sim_3
+import sim_4
+
+seq = sim_1.fill_placeholder_positions('ACxxxxxxCxxxxxxCG', fill_all=True)
+print('Sequence:', seq)
+
+pdb = sim_2.generate_conformation(seq, verbose=False)
+print('PDB:', pdb)
+
+pdbqt = sim_3.pdb_to_pdbqt(pdb, verbose=False)
+print('PDBQT:', pdbqt)
+
+result = sim_4.run_vina_docking(pdbqt, target_name='1LYZ', exhaustiveness=1, num_modes=1, verbose=False)
+best = result.get_best()
+print('Energy:', best.binding_energy if best else 'None')
+"
+8. 检查输出文件
+# 查看生成的 PDB
+head -20 /mnt/d/code/AA/temporary/peptide_*.pdb
+
+# 查看 Phase 2 结果
+cat /mnt/d/code/AA/results/1LYZ/phase2/candidates_*.txt
+
+# 查看 Phase 2 JSON 结果
+cat /mnt/d/code/AA/results/1LYZ/phase2/phase2_result_*.json

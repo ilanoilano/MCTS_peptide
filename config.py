@@ -26,6 +26,42 @@ def get_target_dirs(target_name: str) -> dict:
         "af3_receptor": target_base / "AF3_receptor",
     }
 
+
+# 靶点特定的 pocket 文件名配置
+# 默认使用 "pocket1.pdb"，可为特定靶点指定不同文件名
+TARGET_POCKET_FILES = {
+    # 格式: "靶点名称": "pocket文件名"
+    # 示例:
+    # "5tdn": "pocket1.pdb",
+    "1LYZ": "pocket-for-esmif.pdb",
+}
+
+
+def get_pocket_pdb_path(target_name: str) -> Path:
+    """
+    获取指定靶点的 pocket PDB 文件路径
+    
+    Args:
+        target_name: 靶点名称（如 "1LYZ", "5tdn"）
+    
+    Returns:
+        pocket PDB 文件的完整路径
+    """
+    pocket_dir = get_target_dirs(target_name)["pocket"]
+    # 检查是否有特定配置，否则使用默认 "pocket1.pdb"
+    pocket_filename = TARGET_POCKET_FILES.get(target_name, "pocket1.pdb")
+    return pocket_dir / pocket_filename
+
+# =============================================================================
+# ESM-IF 模型配置
+# =============================================================================
+# ESM-IF 模型权重文件路径（相对于 BASE_DIR）
+ESMIF_MODEL_REL_PATH = Path("models/esm_if1_gvp4_t16_142M_UR50.pt")
+ESMIF_MODEL_PATH = BASE_DIR / ESMIF_MODEL_REL_PATH
+
+# ESM-IF 模型下载地址（当本地文件不存在时自动下载）
+ESMIF_MODEL_URL = "https://dl.fbaipublicfiles.com/fair-esm/models/esm_if1_gvp4_t16_142M_UR50.pt"
+
 # =============================================================================
 # 外部工具路径配置
 # =============================================================================

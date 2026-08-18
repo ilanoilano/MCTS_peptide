@@ -94,37 +94,37 @@ class MCTSEngine:
         path = [node]
         current = node
         
-        # 一直走到叶节点（没有子节点或子节点未完全扩展）
-        while current.children and len(current.children) > 0:
-            # 使用 PUCT 选择最佳子节点
-            # 获取允许的氨基酸
-            next_pos = self._get_next_position(current.sequence)
-            if next_pos is not None:
-                allowed_aas = config.VARIABLE_AA_OPTIONS.get(next_pos, config.ALLOWED_AMINO_ACIDS)
-                # 过滤掉已尝试的
-                available_aas = [aa for aa in allowed_aas if aa not in current.children]
-                if available_aas:
-                    # 返回 (氨基酸, 子节点)，子节点为 None 表示需要创建
-                    selected_aa, best_child = self.selector.select(current, available_aas)
-                    if best_child is None and selected_aa:
-                        # 需要创建新节点
-                        best_child = self._create_child(current, selected_aa, next_pos)
-                elif current.children:
-                    # 所有氨基酸都已尝试，选择最佳子节点
-                    best_child = max(current.children.values(), key=lambda n: n.average_score)
-                else:
-                    best_child = None
-            else:
-                best_child = None
-            
-            if best_child is None:
-                break
-            
-            path.append(best_child)
-            current = best_child
-            
+        # 一直走到叶节点
+        while True:
             # 检查是否是终止节点
             if current.is_terminal:
+                break
+            
+            # 找到下一个可变位置
+            next_pos = self._get_next_position(current.sequence)
+            if next_pos is None:
+                # 序列已完成
+                current.is_terminal = True
+                break
+            
+            # 获取允许的氨基酸
+            allowed_aas = config.VARIABLE_AA_OPTIONS.get(next_pos, config.ALLOWED_AMINO_ACIDS)
+            
+            # 过滤掉已尝试的
+            available_aas = [aa for aa in allowed_aas if aa not in current.children]
+            
+            if available_aas:
+                # 有未尝试的氨基酸，停止选择，进入扩展阶段
+                break
+            
+            # 所有氨基酸都已尝试，使用 PUCT 选择最佳子节点
+            if current.children:
+                best_child = self.selector.select(current)
+                if best_child is None:
+                    break
+                path.append(best_child)
+                current = best_child
+            else:
                 break
         
         return path
@@ -238,7 +238,7 @@ class MCTSEngine:
             )
             
             # 获取最佳结合能
-            best_result = vina_output.get_best_result()
+            best_result = vina_output.get_best()
             if best_result is None:
                 raise RuntimeError("Vina 对接没有返回结果")
             binding_energy = best_result.binding_energy
