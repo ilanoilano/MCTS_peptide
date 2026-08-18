@@ -1,0 +1,25 @@
+{
+  "target": "1LYZ",
+  "best_sequence": "ACAAAAAACAAAA__GG",
+  "best_path": [
+    "A",
+    "A",
+    "A",
+    "A",
+    "A",
+    "A",
+    "A",
+    "A",
+    "A",
+    "A"
+  ],
+  "top_sequences": [],
+  "stats": {
+    "iterations": 10,
+    "nodes_created": 11,
+    "simulations_run": 10,
+    "elapsed_time": 35.75,
+    "tree_depth": 10,
+    "terminal_nodes": 0
+  }
+}
